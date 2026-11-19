@@ -31,28 +31,99 @@
 
         /* 1. الرأس المدمج في الأعلى */
         .app-header {
+            position: relative;
             text-align: center;
-            padding-bottom: 6px;
+            padding-bottom: 8px;
+            padding-left: 34px;
+            padding-right: 34px;
             border-bottom: 1px solid #e5e7eb;
             flex-shrink: 0;
         }
 
         .creator-credit {
-            font-size: 10px;
-            color: #4b5563;
-            margin-bottom: 3px;
-            font-weight: normal;
+            font-size: 12px;
+            color: #374151;
+            margin-bottom: 4px;
+            font-weight: bold;
             letter-spacing: 0.1px;
         }
 
         .app-header h1 {
-            font-size: 15px;
+            font-size: 17px;
             font-weight: bold;
             color: #111827;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
 
         .app-header p {
+            font-size: 12.5px;
+            color: #374151;
+        }
+
+        .key-btn {
+            position: absolute;
+            top: 2px;
+            left: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            border: 1px solid #d1d5db;
+            background-color: #f9fafb;
+            color: #111827;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* شريط إدخال مفتاح Gemini API */
+        .api-key-box {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            background-color: #f9fafb;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 8px 10px;
+            flex-shrink: 0;
+        }
+
+        .api-key-box.show {
+            display: flex;
+        }
+
+        .api-key-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .api-key-input {
+            flex: 1;
+            padding: 7px 9px;
+            border: 1px solid #d1d5db;
+            border-radius: 7px;
+            font-family: inherit;
+            font-size: 12px;
+            color: #111827;
+            background-color: #ffffff;
+            outline: none;
+        }
+
+        .save-key-btn {
+            padding: 7px 12px;
+            border: none;
+            border-radius: 7px;
+            background-color: #111827;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .api-key-hint {
             font-size: 11px;
             color: #4b5563;
         }
@@ -148,7 +219,7 @@
             flex-shrink: 0;
         }
 
-        /* حقل النص الرئيسي */
+        /* حقل النص الكبير */
         textarea#userInput {
             flex: 1;
             width: 100%;
@@ -227,7 +298,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             padding: 6px;
-            width: 200px;
+            width: 215px;
             z-index: 50;
             display: none;
             flex-direction: column;
@@ -399,10 +470,20 @@
 
     <!-- الرأس -->
     <header class="app-header">
+        <button type="button" id="keyBtn" class="key-btn" title="إعداد مفتاح Gemini API">🔑</button>
         <div class="creator-credit">تصميم واعداد محمد علي احمد الحطاب</div>
         <h1>🖋️ كاتبك الذكي</h1>
         <p>اكتب نصك، أرفق صورة، أو حمّل ملفاً.. ودع الذكاء الاصطناعي ينجز المهمة فوراً</p>
     </header>
+
+    <!-- صندوق إدخال وحفظ مفتاح Gemini API المجاني -->
+    <div id="apiKeyBox" class="api-key-box">
+        <div class="api-key-row">
+            <input type="password" id="apiKeyInput" class="api-key-input" placeholder="الصق مفتاح Gemini API هنا (AIza...)">
+            <button type="button" id="saveKeyBtn" class="save-key-btn">حفظ</button>
+        </div>
+        <div class="api-key-hint">احصل على مفتاح مجاني من Google AI Studio ويُحفظ في متصفحك فقط.</div>
+    </div>
 
     <!-- منطقة الكتابة الواسعة -->
     <main class="main-input-box">
@@ -465,6 +546,8 @@
     </section>
 
     <script>
+        const STORAGE_KEY = 'smart_writer_gemini_api_key_v1';
+
         // التعليمات المخصصة حسب الخيار المحدد
         const systemInstructions = {
             correct: "أنت مدقق لغوي عربي محترف. قم بتصحيح الأخطاء الإملائية والنحوية وعلامات الترقيم في النص المقدم بدقة مع الحفاظ على المعنى والأسلوب. اعرض النص المصحح مباشرة بوضوح.",
@@ -477,9 +560,13 @@
         };
 
         // متغيرات الحالة
-        let attachment = null; // { kind: 'image' | 'pdf' | 'text', mimeType?, base64?, textContent?, name }
+        let attachment = null;
 
         // مراجع عناصر الواجهة
+        const keyBtn = document.getElementById('keyBtn');
+        const apiKeyBox = document.getElementById('apiKeyBox');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveKeyBtn = document.getElementById('saveKeyBtn');
         const userInput = document.getElementById('userInput');
         const actionSelect = document.getElementById('actionSelect');
         const uploadTriggerBtn = document.getElementById('uploadTriggerBtn');
@@ -506,8 +593,39 @@
             clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => {
                 toastMsg.classList.remove('show');
-            }, 2600);
+            }, 2800);
         }
+
+        // إدارة مفتاح API المحفوظ محلياً
+        function getApiKey() {
+            return (localStorage.getItem(STORAGE_KEY) || '').trim();
+        }
+
+        const existingKey = getApiKey();
+        if (existingKey) {
+            apiKeyInput.value = existingKey;
+        } else {
+            apiKeyBox.classList.add('show');
+        }
+
+        keyBtn.addEventListener('click', () => {
+            apiKeyBox.classList.toggle('show');
+            if (apiKeyBox.classList.contains('show')) {
+                apiKeyInput.focus();
+            }
+        });
+
+        saveKeyBtn.addEventListener('click', () => {
+            const val = apiKeyInput.value.trim();
+            if (!val) {
+                localStorage.removeItem(STORAGE_KEY);
+                showToast('تم مسح المفتاح');
+                return;
+            }
+            localStorage.setItem(STORAGE_KEY, val);
+            apiKeyBox.classList.remove('show');
+            showToast('تم حفظ مفتاح API بنجاح');
+        });
 
         // فتح وإغلاق القائمة المنبثقة فوق زر التحميل
         uploadTriggerBtn.addEventListener('click', (e) => {
@@ -626,10 +744,9 @@
             showToast('تمت إزالة المرفق');
         });
 
-        // دالة الاتصال بواجهة Gemini API مع إعادة المحاولة التلقائية
-        async function fetchGeminiWithRetry(payload, retries = 3, delay = 1000) {
-            const apiKey = "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+        // دالة الاتصال بواجهة Gemini API مع التحقق من المفتاح
+        async function fetchGeminiWithRetry(apiKey, payload, retries = 2, delay = 900) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
             for (let attempt = 0; attempt <= retries; attempt++) {
                 try {
@@ -639,11 +756,14 @@
                         body: JSON.stringify(payload)
                     });
 
+                    const data = await response.json().catch(() => ({}));
+
                     if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
+                        const msg = data?.error?.message || `خطأ في الاتصال (${response.status})`;
+                        throw new Error(msg);
                     }
 
-                    return await response.json();
+                    return data;
                 } catch (err) {
                     if (attempt === retries) throw err;
                     await new Promise((resolve) => setTimeout(resolve, delay * Math.pow(2, attempt)));
@@ -653,6 +773,15 @@
 
         // تنفيذ الطلب عند الضغط على زر "ابدأ الآن"
         submitBtn.addEventListener('click', async () => {
+            const apiKey = (apiKeyInput.value || getApiKey()).trim();
+            if (!apiKey) {
+                apiKeyBox.classList.add('show');
+                apiKeyInput.focus();
+                showToast('أدخل مفتاح Gemini API أولاً ثم اضغط حفظ');
+                return;
+            }
+            localStorage.setItem(STORAGE_KEY, apiKey);
+
             const text = userInput.value.trim();
             const action = actionSelect.value;
 
@@ -691,7 +820,7 @@
                     }
                 };
 
-                const result = await fetchGeminiWithRetry(payload);
+                const result = await fetchGeminiWithRetry(apiKey, payload);
                 const outputText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
 
                 if (!outputText) {
@@ -701,7 +830,7 @@
                 resultContent.textContent = outputText.trim();
                 resultModal.classList.add('show');
             } catch (error) {
-                showToast('حدث خطأ أثناء المعالجة، حاول مرة أخرى');
+                showToast(error.message || 'حدث خطأ أثناء المعالجة، تحقق من المفتاح والإنترنت');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '🚀 ابدأ الآن';
@@ -714,21 +843,26 @@
         });
 
         // نسخ النتيجة إلى الحافظة
-        copyBtn.addEventListener('click', () => {
+        copyBtn.addEventListener('click', async () => {
             const text = resultContent.textContent;
             if (!text) return;
 
-            const tempInput = document.createElement('textarea');
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
             try {
-                document.execCommand('copy');
+                await navigator.clipboard.writeText(text);
                 showToast('تم نسخ النص بنجاح');
             } catch (e) {
-                showToast('تعذر النسخ تلقائياً');
+                const tempInput = document.createElement('textarea');
+                tempInput.value = text;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('تم نسخ النص بنجاح');
+                } catch (err) {
+                    showToast('تعذر النسخ تلقائياً');
+                }
+                document.body.removeChild(tempInput);
             }
-            document.body.removeChild(tempInput);
         });
 
         // بدء طلب جديد
@@ -743,4 +877,3 @@
     </script>
 </body>
 </html>
-```
