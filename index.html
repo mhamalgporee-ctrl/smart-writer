@@ -1,0 +1,747 @@
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>كاتبك الذكي</title>
+    <style>
+        /* إعادة ضبط شاملة وتأمين ملء الشاشة بدون هوامش أو تمرير أفقي */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100dvh;
+            background-color: #ffffff;
+            color: #111827;
+            font-family: Tahoma, 'Segoe UI', Arial, sans-serif;
+            overflow-x: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            gap: 10px;
+        }
+
+        /* 1. الرأس المدمج في الأعلى */
+        .app-header {
+            text-align: center;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+
+        .creator-credit {
+            font-size: 10px;
+            color: #4b5563;
+            margin-bottom: 3px;
+            font-weight: normal;
+            letter-spacing: 0.1px;
+        }
+
+        .app-header h1 {
+            font-size: 15px;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 2px;
+        }
+
+        .app-header p {
+            font-size: 11px;
+            color: #4b5563;
+        }
+
+        /* 2. منطقة الكتابة الواسعة */
+        .main-input-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            background-color: #f9fafb;
+            padding: 10px;
+            position: relative;
+            min-height: 0;
+        }
+
+        .main-input-box:focus-within {
+            border-color: #111827;
+        }
+
+        /* منطقة معاينة المرفقات */
+        .attachment-preview {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 6px 8px;
+            margin-bottom: 8px;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .attachment-preview.show {
+            display: flex;
+        }
+
+        .attachment-details {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+        }
+
+        .preview-thumb {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            display: none;
+            flex-shrink: 0;
+        }
+
+        .file-badge-icon {
+            width: 36px;
+            height: 36px;
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .attachment-name {
+            font-size: 12px;
+            font-weight: bold;
+            color: #111827;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 190px;
+        }
+
+        .close-att-btn {
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            color: #111827;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* حقل النص الرئيسي */
+        textarea#userInput {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: transparent;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+            font-size: 13px;
+            color: #111827;
+            line-height: 1.6;
+        }
+
+        textarea#userInput::placeholder {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        /* 3. الشريط السفلي داخل صندوق الكتابة */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e5e7eb;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        /* القائمة المنسدلة للإعدادات على اليمين */
+        select#actionSelect {
+            flex: 1;
+            padding: 8px 10px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: bold;
+            color: #111827;
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            outline: none;
+            cursor: pointer;
+            min-width: 0;
+        }
+
+        /* زر التحميل/الإرفاق الصغير على اليسار */
+        .upload-trigger-btn {
+            padding: 8px 12px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: bold;
+            color: #111827;
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .upload-trigger-btn:active {
+            background-color: #f3f4f6;
+        }
+
+        /* القائمة المنبثقة فوق زر التحميل */
+        .popover-menu {
+            position: absolute;
+            bottom: 45px;
+            left: 0;
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 6px;
+            width: 200px;
+            z-index: 50;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .popover-menu.show {
+            display: flex;
+        }
+
+        .popover-item {
+            width: 100%;
+            padding: 8px 10px;
+            background-color: #ffffff;
+            border: 1px solid transparent;
+            border-radius: 7px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: bold;
+            color: #111827;
+            text-align: right;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .popover-item:hover, .popover-item:active {
+            background-color: #f3f4f6;
+            border-color: #e5e7eb;
+        }
+
+        /* إخفاء حقول الملفات نهائياً */
+        input[type="file"] {
+            display: none !important;
+        }
+
+        /* 4. زر الإرسال الرئيسي في الأسفل */
+        .submit-btn {
+            width: 100%;
+            padding: 11px;
+            background-color: #111827;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 5. نافذة النتيجة بملء الشاشة */
+        .result-modal {
+            position: fixed;
+            inset: 0;
+            background-color: #ffffff;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            padding: 14px;
+            gap: 10px;
+        }
+
+        .result-modal.show {
+            display: flex;
+        }
+
+        .result-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+
+        .result-top-bar h2 {
+            font-size: 15px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .back-btn {
+            padding: 6px 10px;
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: bold;
+            color: #111827;
+            cursor: pointer;
+        }
+
+        .result-content {
+            flex: 1;
+            overflow-y: auto;
+            background-color: #f9fafb;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 13px;
+            color: #111827;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .result-bottom-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .action-sec-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid #111827;
+        }
+
+        .copy-btn {
+            background-color: #111827;
+            color: #ffffff;
+        }
+
+        .new-btn {
+            background-color: #ffffff;
+            color: #111827;
+        }
+
+        /* إشعار رسائل صغيرة بدلاً من alert */
+        .toast-msg {
+            position: fixed;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #111827;
+            color: #ffffff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 200;
+            display: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            white-space: nowrap;
+        }
+
+        .toast-msg.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- رسالة تنبيه مصغرة -->
+    <div id="toastMsg" class="toast-msg"></div>
+
+    <!-- الرأس -->
+    <header class="app-header">
+        <div class="creator-credit">تصميم واعداد محمد علي احمد الحطاب</div>
+        <h1>🖋️ كاتبك الذكي</h1>
+        <p>اكتب نصك، أرفق صورة، أو حمّل ملفاً.. ودع الذكاء الاصطناعي ينجز المهمة فوراً</p>
+    </header>
+
+    <!-- منطقة الكتابة الواسعة -->
+    <main class="main-input-box">
+        <!-- منطقة معاينة المرفقات -->
+        <div id="attachmentPreview" class="attachment-preview">
+            <div class="attachment-details">
+                <img id="previewThumb" class="preview-thumb" src="" alt="معاينة الصورة">
+                <div id="fileBadgeIcon" class="file-badge-icon">📄</div>
+                <span id="attachmentName" class="attachment-name"></span>
+            </div>
+            <button type="button" id="closeAttBtn" class="close-att-btn" title="إزالة المرفق">✕</button>
+        </div>
+
+        <!-- حقل النص الكبير -->
+        <textarea id="userInput" placeholder="اكتب هنا نصك، فكرتك، سؤالك الرياضي، أو أضف تعليماتك..."></textarea>
+
+        <!-- الشريط السفلي داخل صندوق الكتابة -->
+        <div class="toolbar">
+            <!-- القائمة المنسدلة للإعدادات على اليمين -->
+            <select id="actionSelect" aria-label="اختر نوع المهمة">
+                <option value="correct">✅ تصحيح الأخطاء</option>
+                <option value="post">📱 منشور فيسبوك</option>
+                <option value="improve">✨ تحسين النص</option>
+                <option value="math">🔢 حل رياضيات</option>
+                <option value="summarize">📝 تلخيص النص</option>
+                <option value="translate">🌐 ترجمة احترافية</option>
+                <option value="analyze">💡 تحليل وشرح</option>
+            </select>
+
+            <!-- زر التحميل/الإرفاق الصغير على اليسار -->
+            <button type="button" id="uploadTriggerBtn" class="upload-trigger-btn">+ وضع الكتابة</button>
+
+            <!-- القائمة المنبثقة فوق زر التحميل -->
+            <div id="popoverMenu" class="popover-menu">
+                <button type="button" class="popover-item" data-mode="text">✍️ وضع الكتابة (نص مباشر)</button>
+                <button type="button" class="popover-item" data-mode="image">🖼️ رفع صورة (تحليل صورة أو حل مسألة مصورة)</button>
+                <button type="button" class="popover-item" data-mode="file">📄 رفع ملف (مستند نصي، كود، أو PDF)</button>
+            </div>
+
+            <!-- حقول اختيار الملفات المخفية -->
+            <input type="file" id="imageInput" accept="image/*">
+            <input type="file" id="fileInput" accept=".txt,.md,.csv,.json,.js,.html,.css,.py,.pdf">
+        </div>
+    </main>
+
+    <!-- زر الإرسال الرئيسي -->
+    <button type="button" id="submitBtn" class="submit-btn">🚀 ابدأ الآن</button>
+
+    <!-- نافذة النتيجة بملء الشاشة -->
+    <section id="resultModal" class="result-modal">
+        <div class="result-top-bar">
+            <h2>✨ النتيجة</h2>
+            <button type="button" id="backBtn" class="back-btn">رجوع ✕</button>
+        </div>
+        <div id="resultContent" class="result-content"></div>
+        <div class="result-bottom-actions">
+            <button type="button" id="copyBtn" class="action-sec-btn copy-btn">📋 نسخ النص</button>
+            <button type="button" id="newBtn" class="action-sec-btn new-btn">🔄 طلب جديد</button>
+        </div>
+    </section>
+
+    <script>
+        // التعليمات المخصصة حسب الخيار المحدد
+        const systemInstructions = {
+            correct: "أنت مدقق لغوي عربي محترف. قم بتصحيح الأخطاء الإملائية والنحوية وعلامات الترقيم في النص المقدم بدقة مع الحفاظ على المعنى والأسلوب. اعرض النص المصحح مباشرة بوضوح.",
+            post: "أنت خبير تسويق وصناعة محتوى على فيسبوك. حوّل الفكرة أو النص المقدم إلى منشور فيسبوك جذاب يتضمن جملة افتتاحية قوية، رموز تعبيرية مناسبة، دعوة للتفاعل، و3 إلى 5 هاشتاجات ذات صلة.",
+            improve: "أنت محرر وكاتب محترف. حسّن النص المقدم وأعد صياغته بأسلوب أكثر بلاغة ووضوحاً وجاذبية مع الحفاظ على الفكرة الأساسية.",
+            math: "أنت أستاذ رياضيات خبير. حل السؤال أو المسألة الرياضية المقدمة (سواء كانت نصاً أو صورة) خطوة بخطوة بوضوح وبساطة وصولاً إلى النتيجة النهائية.",
+            summarize: "أنت محلل معلومات خبير. لخّص المحتوى المقدم (نص أو صورة أو ملف) في نقاط مركزة وواضحة وسهلة الفهم.",
+            translate: "أنت مترجم محترف. إذا كان النص بالعربية فترجمه إلى الإنجليزية باحترافية، وإذا كان بالإنجليزية أو أي لغة أخرى فترجمه إلى العربية الفصحى السليمة.",
+            analyze: "أنت مساعد ذكي شامل. حلل واشرح المحتوى المقدم (نص أو صورة أو ملف) بدقة ووضوح باللغة العربية."
+        };
+
+        // متغيرات الحالة
+        let attachment = null; // { kind: 'image' | 'pdf' | 'text', mimeType?, base64?, textContent?, name }
+
+        // مراجع عناصر الواجهة
+        const userInput = document.getElementById('userInput');
+        const actionSelect = document.getElementById('actionSelect');
+        const uploadTriggerBtn = document.getElementById('uploadTriggerBtn');
+        const popoverMenu = document.getElementById('popoverMenu');
+        const imageInput = document.getElementById('imageInput');
+        const fileInput = document.getElementById('fileInput');
+        const attachmentPreview = document.getElementById('attachmentPreview');
+        const previewThumb = document.getElementById('previewThumb');
+        const fileBadgeIcon = document.getElementById('fileBadgeIcon');
+        const attachmentName = document.getElementById('attachmentName');
+        const closeAttBtn = document.getElementById('closeAttBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultModal = document.getElementById('resultModal');
+        const resultContent = document.getElementById('resultContent');
+        const backBtn = document.getElementById('backBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const newBtn = document.getElementById('newBtn');
+        const toastMsg = document.getElementById('toastMsg');
+
+        let toastTimeout = null;
+        function showToast(message) {
+            toastMsg.textContent = message;
+            toastMsg.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toastMsg.classList.remove('show');
+            }, 2600);
+        }
+
+        // فتح وإغلاق القائمة المنبثقة فوق زر التحميل
+        uploadTriggerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            popoverMenu.classList.toggle('show');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!popoverMenu.contains(e.target) && e.target !== uploadTriggerBtn) {
+                popoverMenu.classList.remove('show');
+            }
+        });
+
+        // التعامل مع أزرار القائمة المنبثقة الثلاثة
+        document.querySelectorAll('.popover-item').forEach((item) => {
+            item.addEventListener('click', () => {
+                const mode = item.getAttribute('data-mode');
+                popoverMenu.classList.remove('show');
+
+                if (mode === 'text') {
+                    clearAttachment();
+                    userInput.focus();
+                    showToast('تم تفعيل وضع الكتابة');
+                } else if (mode === 'image') {
+                    imageInput.click();
+                } else if (mode === 'file') {
+                    fileInput.click();
+                }
+            });
+        });
+
+        // معالجة رفع الصورة
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast('يرجى اختيار ملف صورة صالح');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const dataUrl = event.target.result;
+                attachment = {
+                    kind: 'image',
+                    mimeType: file.type,
+                    base64: dataUrl.split(',')[1],
+                    name: file.name
+                };
+
+                uploadTriggerBtn.textContent = '+ صورة مرفقة';
+                previewThumb.src = dataUrl;
+                previewThumb.style.display = 'block';
+                fileBadgeIcon.style.display = 'none';
+                attachmentName.textContent = file.name;
+                attachmentPreview.classList.add('show');
+                showToast('تم إرفاق الصورة بنجاح');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // معالجة رفع الملفات (نصوص أو PDF)
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+            if (isPdf) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    attachment = {
+                        kind: 'pdf',
+                        mimeType: 'application/pdf',
+                        base64: event.target.result.split(',')[1],
+                        name: file.name
+                    };
+                    showFileAttachmentUI(file.name);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    attachment = {
+                        kind: 'text',
+                        textContent: event.target.result,
+                        name: file.name
+                    };
+                    showFileAttachmentUI(file.name);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function showFileAttachmentUI(name) {
+            uploadTriggerBtn.textContent = '+ ملف مرفق';
+            previewThumb.style.display = 'none';
+            fileBadgeIcon.style.display = 'flex';
+            attachmentName.textContent = name;
+            attachmentPreview.classList.add('show');
+            showToast('تم تحميل الملف بنجاح');
+        }
+
+        function clearAttachment() {
+            attachment = null;
+            imageInput.value = '';
+            fileInput.value = '';
+            uploadTriggerBtn.textContent = '+ وضع الكتابة';
+            attachmentPreview.classList.remove('show');
+            previewThumb.src = '';
+        }
+
+        closeAttBtn.addEventListener('click', () => {
+            clearAttachment();
+            showToast('تمت إزالة المرفق');
+        });
+
+        // دالة الاتصال بواجهة Gemini API مع إعادة المحاولة التلقائية
+        async function fetchGeminiWithRetry(payload, retries = 3, delay = 1000) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    return await response.json();
+                } catch (err) {
+                    if (attempt === retries) throw err;
+                    await new Promise((resolve) => setTimeout(resolve, delay * Math.pow(2, attempt)));
+                }
+            }
+        }
+
+        // تنفيذ الطلب عند الضغط على زر "ابدأ الآن"
+        submitBtn.addEventListener('click', async () => {
+            const text = userInput.value.trim();
+            const action = actionSelect.value;
+
+            if (!text && !attachment) {
+                showToast('الرجاء كتابة نص أو إرفاق صورة أو ملف أولاً');
+                userInput.focus();
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ جاري المعالجة...';
+
+            try {
+                const parts = [];
+                let finalPrompt = text || 'نفذ المهمة المطلوبة بدقة ووضوح على المرفق التالي:';
+
+                if (attachment && attachment.kind === 'text') {
+                    finalPrompt += `\n\n--- محتوى الملف (${attachment.name}) ---\n${attachment.textContent}`;
+                }
+
+                parts.push({ text: finalPrompt });
+
+                if (attachment && (attachment.kind === 'image' || attachment.kind === 'pdf')) {
+                    parts.push({
+                        inlineData: {
+                            mimeType: attachment.mimeType,
+                            data: attachment.base64
+                        }
+                    });
+                }
+
+                const payload = {
+                    contents: [{ parts }],
+                    systemInstruction: {
+                        parts: [{ text: systemInstructions[action] }]
+                    }
+                };
+
+                const result = await fetchGeminiWithRetry(payload);
+                const outputText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!outputText) {
+                    throw new Error('لم يتم استلام نص من النموذج');
+                }
+
+                resultContent.textContent = outputText.trim();
+                resultModal.classList.add('show');
+            } catch (error) {
+                showToast('حدث خطأ أثناء المعالجة، حاول مرة أخرى');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 ابدأ الآن';
+            }
+        });
+
+        // إغلاق نافذة النتيجة والعودة للتعديل
+        backBtn.addEventListener('click', () => {
+            resultModal.classList.remove('show');
+        });
+
+        // نسخ النتيجة إلى الحافظة
+        copyBtn.addEventListener('click', () => {
+            const text = resultContent.textContent;
+            if (!text) return;
+
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                showToast('تم نسخ النص بنجاح');
+            } catch (e) {
+                showToast('تعذر النسخ تلقائياً');
+            }
+            document.body.removeChild(tempInput);
+        });
+
+        // بدء طلب جديد
+        newBtn.addEventListener('click', () => {
+            userInput.value = '';
+            clearAttachment();
+            resultContent.textContent = '';
+            resultModal.classList.remove('show');
+            userInput.focus();
+            showToast('جاهز لطلب جديد');
+        });
+    </script>
+</body>
+</html>
+```
